@@ -1025,6 +1025,7 @@ static void FixStep4(const double *f0_step3, int f0_length, int threshold,
 // FixF0Contour() obtains the likely F0 contour.
 //-----------------------------------------------------------------------------
 static void FixF0Contour(const double * const *f0_candidates,
+    double allowed_range1, double allowed_range3,
     const double * const *f0_scores, int f0_length, int number_of_candidates,
     double *best_f0_contour) {
   double *tmp_f0_contour1 = new double[f0_length];
@@ -1033,10 +1034,10 @@ static void FixF0Contour(const double * const *f0_candidates,
   // These parameters are optimized by speech databases.
   SearchF0Base(f0_candidates, f0_scores, f0_length,
       number_of_candidates, tmp_f0_contour1);
-  FixStep1(tmp_f0_contour1, f0_length, 0.008, tmp_f0_contour2);
+  FixStep1(tmp_f0_contour1, f0_length, allowed_range1, tmp_f0_contour2);
   FixStep2(tmp_f0_contour2, f0_length, 6, tmp_f0_contour1);
   FixStep3(tmp_f0_contour1, f0_length, number_of_candidates, f0_candidates,
-      0.18, f0_scores, tmp_f0_contour2);
+      allowed_range3, f0_scores, tmp_f0_contour2);
   FixStep4(tmp_f0_contour2, f0_length, 9, best_f0_contour);
 
   delete[] tmp_f0_contour1;
@@ -1144,6 +1145,7 @@ static int HarvestGeneralBodySub(const double *boundary_f0_list,
 //-----------------------------------------------------------------------------
 static void HarvestGeneralBody(const double *x, int x_length, int fs,
     int frame_period, double f0_floor, double f0_ceil,
+    double allowed_range1, double allowed_range3,
     double channels_in_octave, int speed, double *temporal_positions,
     double *f0) {
   double adjusted_f0_floor = f0_floor * 0.9;
@@ -1198,7 +1200,7 @@ static void HarvestGeneralBody(const double *x, int x_length, int fs,
       f0_candidates, f0_candidates_score);
 
   double *best_f0_contour = new double[f0_length];
-  FixF0Contour(f0_candidates, f0_candidates_score, f0_length,
+  FixF0Contour(f0_candidates, allowed_range1, allowed_range3, f0_candidates_score, f0_length,
       number_of_candidates, best_f0_contour);
   SmoothF0Contour(best_f0_contour, f0_length, f0);
 
@@ -1229,7 +1231,7 @@ void Harvest(const double *x, int x_length, int fs,
 
   if (option->frame_period == 1.0) {
     HarvestGeneralBody(x, x_length, fs, 1, option->f0_floor,
-        option->f0_ceil, channels_in_octave, dimension_ratio,
+        option->f0_ceil, option->allowed_range1, option->allowed_range3, channels_in_octave, dimension_ratio,
         temporal_positions, f0);
     return;
   }
@@ -1240,7 +1242,7 @@ void Harvest(const double *x, int x_length, int fs,
   double *basic_f0 = new double[basic_f0_length];
   double *basic_temporal_positions = new double[basic_f0_length];
   HarvestGeneralBody(x, x_length, fs, basic_frame_period, option->f0_floor,
-      option->f0_ceil, channels_in_octave, dimension_ratio,
+      option->f0_ceil, option->allowed_range1, option->allowed_range3, channels_in_octave, dimension_ratio,
       basic_temporal_positions, basic_f0);
 
   int f0_length = GetSamplesForHarvest(fs, x_length, option->frame_period);
@@ -1259,4 +1261,6 @@ void InitializeHarvestOption(HarvestOption *option) {
   option->f0_ceil = world::kCeilF0;
   option->f0_floor = world::kFloorF0;
   option->frame_period = 5;
+  option->allowed_range1=0.008;
+  option->allowed_range3=0.18;
 }

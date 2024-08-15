@@ -17,6 +17,8 @@ typedef struct {
   double f0_floor;
   double f0_ceil;
   double frame_period;
+  double allowed_range1;
+  double allowed_range3;
 } HarvestOption;
 
 //-----------------------------------------------------------------------------
