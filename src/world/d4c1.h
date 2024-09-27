@@ -36,7 +36,7 @@ typedef struct
 //-----------------------------------------------------------------------------
 void D4C1(const double *x, int x_length, int fs,
           const double *temporal_positions, const double *f0, int f0_length,
-          int fft_size, const D4C1Option *option, double **aperiodicity);
+          int fft_size, const D4C1Option *option, double *aperiodicity);
 
 //-----------------------------------------------------------------------------
 // InitializeD4COption allocates the memory to the struct and sets the

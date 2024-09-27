@@ -206,7 +206,7 @@ namespace
   // The upper limit is given based on the sampling frequency.
   //-----------------------------------------------------------------------------
   static void GetCoarseAperiodicity(const double *static_group_delay, int fs,
-                                    int fft_size, double frequencyInterval, int number_of_aperiodicities, const double *window,
+                                    int fft_size, double frequencyInterval, const double *window,
                                     int window_length, const ForwardRealFFT *forward_real_fft,
                                     double *coarse_aperiodicity)
   {
@@ -218,26 +218,21 @@ namespace
       forward_real_fft->waveform[i] = 0.0;
 
     double *power_spectrum = new double[fft_size / 2 + 1];
-    int center;
-    for (int i = 0; i < number_of_aperiodicities; ++i)
-    {
-      center =
-          static_cast<int>(frequencyInterval * (i + 1) * fft_size / fs);
-      for (int j = 0; j <= half_window_length * 2; ++j)
-        forward_real_fft->waveform[j] =
-            static_group_delay[center - half_window_length + j] * window[j];
-      fft_execute(forward_real_fft->forward_fft);
-      for (int j = 0; j <= fft_size / 2; ++j)
-        power_spectrum[j] =
-            forward_real_fft->spectrum[j][0] * forward_real_fft->spectrum[j][0] +
-            forward_real_fft->spectrum[j][1] * forward_real_fft->spectrum[j][1];
-      std::sort(power_spectrum, power_spectrum + fft_size / 2 + 1);
-      for (int j = 1; j <= fft_size / 2; ++j)
-        power_spectrum[j] += power_spectrum[j - 1];
-      coarse_aperiodicity[i] =
-          10 * log10(power_spectrum[fft_size / 2 - boundary - 1] /
-                     power_spectrum[fft_size / 2]);
-    }
+    int center = static_cast<int>(frequencyInterval * fft_size / fs);
+    for (int j = 0; j <= half_window_length * 2; ++j)
+      forward_real_fft->waveform[j] =
+          static_group_delay[center - half_window_length + j] * window[j];
+    fft_execute(forward_real_fft->forward_fft);
+    for (int j = 0; j <= fft_size / 2; ++j)
+      power_spectrum[j] =
+          forward_real_fft->spectrum[j][0] * forward_real_fft->spectrum[j][0] +
+          forward_real_fft->spectrum[j][1] * forward_real_fft->spectrum[j][1];
+    std::sort(power_spectrum, power_spectrum + fft_size / 2 + 1);
+    for (int j = 1; j <= fft_size / 2; ++j)
+      power_spectrum[j] += power_spectrum[j - 1];
+    *coarse_aperiodicity =
+        sqrt(power_spectrum[fft_size / 2 - boundary - 1] /
+             power_spectrum[fft_size / 2]);
     delete[] power_spectrum;
   }
 
@@ -313,7 +308,7 @@ namespace
   //-----------------------------------------------------------------------------
   static void D4CGeneralBody(const double *x, int x_length, int fs,
                              double current_f0, int fft_size, double current_position,
-                             double frequencyInterval, int number_of_aperiodicities, const double *window, int window_length,
+                             double frequencyInterval, const double *window, int window_length,
                              const ForwardRealFFT *forward_real_fft, double *coarse_aperiodicity)
   {
     double *static_centroid = new double[fft_size / 2 + 1];
@@ -327,13 +322,12 @@ namespace
                         fs, current_f0, fft_size, static_group_delay);
 
     GetCoarseAperiodicity(static_group_delay, fs, fft_size,
-                          frequencyInterval, number_of_aperiodicities, window, window_length, forward_real_fft,
+                          frequencyInterval, window, window_length, forward_real_fft,
                           coarse_aperiodicity);
 
     // Revision of the result based on the F0
-    for (int i = 0; i < number_of_aperiodicities; ++i)
-      coarse_aperiodicity[i] = MyMinDouble(0.0,
-                                           coarse_aperiodicity[i] + (current_f0 - 100) / 50.0);
+    *coarse_aperiodicity = MyMinDouble(1.0,
+                                       *coarse_aperiodicity * pow(10.0, (current_f0 - 100) / 1000.0));
 
     delete[] static_centroid;
     delete[] smoothed_power_spectrum;
@@ -341,45 +335,27 @@ namespace
   }
 
   static void InitializeAperiodicity(int f0_length, int fft_size,
-                                     double **aperiodicity)
+                                     double *aperiodicity)
   {
     for (int i = 0; i < f0_length; ++i)
-      for (int j = 0; j < fft_size / 2 + 1; ++j)
-        aperiodicity[i][j] = 1.0 - world::kMySafeGuardMinimum;
+      aperiodicity[i] = 1.0 - world::kMySafeGuardMinimum;
   }
-
-  static void GetAperiodicity(const double *coarse_frequency_axis,
-                              const double *coarse_aperiodicity, int number_of_aperiodicities,
-                              const double *frequency_axis, int fft_size, double *aperiodicity)
-  {
-    interp1(coarse_frequency_axis, coarse_aperiodicity,
-            number_of_aperiodicities + 2, frequency_axis, fft_size / 2 + 1,
-            aperiodicity);
-    for (int i = 0; i <= fft_size / 2; ++i)
-      aperiodicity[i] = pow(10.0, aperiodicity[i] / 20.0);
-  }
-
 } // namespace
 
 void D4C1(const double *x, int x_length, int fs,
           const double *temporal_positions, const double *f0, int f0_length,
-          int fft_size, const D4C1Option *option, double **aperiodicity)
+          int fft_size, const D4C1Option *option, double *aperiodicity)
 {
   randn_reseed();
 
   InitializeAperiodicity(f0_length, fft_size, aperiodicity);
 
-  int fft_size_d4c = static_cast<int>(pow(2.0, 1.0 +
-                                                   static_cast<int>(log(4.0 * fs / world::kFloorF0D4C + 1) /
-                                                                    world::kLog2)));
+  int fft_size_d4c =
+      static_cast<int>(pow(2.0, 1.0 + static_cast<int>(log(4.0 * fs / world::kFloorF0D4C + 1) / world::kLog2)));
 
   ForwardRealFFT forward_real_fft = {0};
   InitializeForwardRealFFT(fft_size_d4c, &forward_real_fft);
 
-  int number_of_aperiodicities =
-      static_cast<int>(MyMinDouble(world::kUpperLimit, fs / 2.0 -
-                                                           option->frequencyInterval) /
-                       option->frequencyInterval);
   // Since the window function is common in D4CGeneralBody(),
   // it is designed here to speed up.
   int window_length =
@@ -392,15 +368,6 @@ void D4C1(const double *x, int x_length, int fs,
   D4CLoveTrain(x, fs, x_length, f0, f0_length, temporal_positions,
                aperiodicity0);
 
-  double *coarse_aperiodicity = new double[number_of_aperiodicities + 2];
-  coarse_aperiodicity[0] = -60.0;
-  coarse_aperiodicity[number_of_aperiodicities + 1] =
-      -world::kMySafeGuardMinimum;
-  double *coarse_frequency_axis = new double[number_of_aperiodicities + 2];
-  for (int i = 0; i <= number_of_aperiodicities; ++i)
-    coarse_frequency_axis[i] = i * option->frequencyInterval;
-  coarse_frequency_axis[number_of_aperiodicities + 1] = fs / 2.0;
-
   double *frequency_axis = new double[fft_size / 2 + 1];
   for (int i = 0; i <= fft_size / 2; ++i)
     frequency_axis[i] = static_cast<double>(i) * fs / fft_size;
@@ -410,19 +377,12 @@ void D4C1(const double *x, int x_length, int fs,
     if (f0[i] == 0 || aperiodicity0[i] <= option->threshold)
       continue;
     D4CGeneralBody(x, x_length, fs, MyMaxDouble(world::kFloorF0D4C, f0[i]),
-                   fft_size_d4c, temporal_positions[i], option->frequencyInterval, number_of_aperiodicities, window,
-                   window_length, &forward_real_fft, &coarse_aperiodicity[1]);
-
-    // Linear interpolation to convert the coarse aperiodicity into its
-    // spectral representation.
-    GetAperiodicity(coarse_frequency_axis, coarse_aperiodicity,
-                    number_of_aperiodicities, frequency_axis, fft_size, aperiodicity[i]);
+                   fft_size_d4c, temporal_positions[i], option->frequencyInterval, window,
+                   window_length, &forward_real_fft, &aperiodicity[i]);
   }
 
   DestroyForwardRealFFT(&forward_real_fft);
   delete[] aperiodicity0;
-  delete[] coarse_frequency_axis;
-  delete[] coarse_aperiodicity;
   delete[] window;
   delete[] frequency_axis;
 }
