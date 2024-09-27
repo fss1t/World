@@ -48,6 +48,7 @@ add_library(world STATIC
         src/codec.cpp
         src/common.cpp
         src/d4c.cpp
+        src/d4c1.cpp
         src/dio.cpp
         src/fft.cpp
         src/harvest.cpp
