@@ -16,7 +16,7 @@ WORLD_BEGIN_C_DECLS
 typedef struct
 {
   double threshold;
-  double frequencyInterval;
+  double frequency_interval;
 } D4COption;
 
 //-----------------------------------------------------------------------------

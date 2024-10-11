@@ -207,7 +207,7 @@ namespace
   //-----------------------------------------------------------------------------
   static void GetCoarseAperiodicity(const double *static_group_delay, int fs,
                                     int fft_size, int number_of_aperiodicities, const double *window,
-                                    int window_length, double frequencyInterval, const ForwardRealFFT *forward_real_fft,
+                                    int window_length, double frequency_interval, const ForwardRealFFT *forward_real_fft,
                                     double *coarse_aperiodicity)
   {
     int boundary =
@@ -222,7 +222,7 @@ namespace
     for (int i = 0; i < number_of_aperiodicities; ++i)
     {
       center =
-          static_cast<int>(frequencyInterval * (i + 1) * fft_size / fs);
+          static_cast<int>(frequency_interval * (i + 1) * fft_size / fs);
       for (int j = 0; j <= half_window_length * 2; ++j)
         forward_real_fft->waveform[j] =
             static_group_delay[center - half_window_length + j] * window[j];
@@ -313,7 +313,7 @@ namespace
   //-----------------------------------------------------------------------------
   static void D4CGeneralBody(const double *x, int x_length, int fs,
                              double current_f0, int fft_size, double current_position,
-                             int number_of_aperiodicities, const double *window, int window_length, double frequencyInterval,
+                             int number_of_aperiodicities, const double *window, int window_length, double frequency_interval,
                              const ForwardRealFFT *forward_real_fft, double *coarse_aperiodicity)
   {
     double *static_centroid = new double[fft_size / 2 + 1];
@@ -327,7 +327,7 @@ namespace
                         fs, current_f0, fft_size, static_group_delay);
 
     GetCoarseAperiodicity(static_group_delay, fs, fft_size,
-                          number_of_aperiodicities, window, window_length, frequencyInterval, forward_real_fft,
+                          number_of_aperiodicities, window, window_length, frequency_interval, forward_real_fft,
                           coarse_aperiodicity);
 
     // Revision of the result based on the F0
@@ -378,12 +378,12 @@ void D4C(const double *x, int x_length, int fs,
 
   int number_of_aperiodicities =
       static_cast<int>(MyMinDouble(world::kUpperLimit, fs / 2.0 -
-                                                           option->frequencyInterval) /
-                       option->frequencyInterval);
+                                                           option->frequency_interval) /
+                       option->frequency_interval);
   // Since the window function is common in D4CGeneralBody(),
   // it is designed here to speed up.
   int window_length =
-      static_cast<int>(option->frequencyInterval * fft_size_d4c / fs) * 2 + 1;
+      static_cast<int>(option->frequency_interval * fft_size_d4c / fs) * 2 + 1;
   double *window = new double[window_length];
   NuttallWindow(window_length, window);
 
@@ -398,7 +398,7 @@ void D4C(const double *x, int x_length, int fs,
       -world::kMySafeGuardMinimum;
   double *coarse_frequency_axis = new double[number_of_aperiodicities + 2];
   for (int i = 0; i <= number_of_aperiodicities; ++i)
-    coarse_frequency_axis[i] = i * option->frequencyInterval;
+    coarse_frequency_axis[i] = i * option->frequency_interval;
   coarse_frequency_axis[number_of_aperiodicities + 1] = fs / 2.0;
 
   double *frequency_axis = new double[fft_size / 2 + 1];
@@ -411,7 +411,7 @@ void D4C(const double *x, int x_length, int fs,
       continue;
     D4CGeneralBody(x, x_length, fs, MyMaxDouble(world::kFloorF0D4C, f0[i]),
                    fft_size_d4c, temporal_positions[i], number_of_aperiodicities, window,
-                   window_length, option->frequencyInterval, &forward_real_fft, &coarse_aperiodicity[1]);
+                   window_length, option->frequency_interval, &forward_real_fft, &coarse_aperiodicity[1]);
 
     // Linear interpolation to convert the coarse aperiodicity into its
     // spectral representation.
@@ -430,5 +430,5 @@ void D4C(const double *x, int x_length, int fs,
 void InitializeD4COption(D4COption *option)
 {
   option->threshold = world::kThreshold;
-  option->frequencyInterval = world::kFrequencyInterval;
+  option->frequency_interval = world::kFrequencyInterval;
 }
