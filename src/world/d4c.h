@@ -13,8 +13,10 @@ WORLD_BEGIN_C_DECLS
 //-----------------------------------------------------------------------------
 // Struct for D4C
 //-----------------------------------------------------------------------------
-typedef struct {
+typedef struct
+{
   double threshold;
+  double frequencyInterval;
 } D4COption;
 
 //-----------------------------------------------------------------------------
@@ -33,8 +35,8 @@ typedef struct {
 //   aperiodicity  : Aperiodicity estimated by D4C.
 //-----------------------------------------------------------------------------
 void D4C(const double *x, int x_length, int fs,
-    const double *temporal_positions, const double *f0, int f0_length,
-    int fft_size, const D4COption *option, double **aperiodicity);
+         const double *temporal_positions, const double *f0, int f0_length,
+         int fft_size, const D4COption *option, double **aperiodicity);
 
 //-----------------------------------------------------------------------------
 // InitializeD4COption allocates the memory to the struct and sets the
@@ -47,4 +49,4 @@ void InitializeD4COption(D4COption *option);
 
 WORLD_END_C_DECLS
 
-#endif  // WORLD_D4C_H_
+#endif // WORLD_D4C_H_
