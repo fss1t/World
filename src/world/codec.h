@@ -21,6 +21,7 @@ WORLD_BEGIN_C_DECLS
 //   Number of aperiodicities
 //-----------------------------------------------------------------------------
 int GetNumberOfAperiodicities(int fs);
+int GetNumberOfAperiodicitiesFromInterval(int fs, double frequency_interval);
 
 //-----------------------------------------------------------------------------
 // CodeAperiodicity codes the aperiodicity. The number of dimensions is
@@ -35,8 +36,8 @@ int GetNumberOfAperiodicities(int fs);
 // Output:
 //   coded_aperiodicity : Coded aperiodicity
 //-----------------------------------------------------------------------------
-void CodeAperiodicity(const double * const *aperiodicity, int f0_length,
-  int fs, int fft_size, double **coded_aperiodicity);
+void CodeAperiodicity(const double *const *aperiodicity, int f0_length,
+                      int fs, int fft_size, double **coded_aperiodicity);
 
 //-----------------------------------------------------------------------------
 // DecodeAperiodicity decodes the coded aperiodicity.
@@ -50,8 +51,8 @@ void CodeAperiodicity(const double * const *aperiodicity, int f0_length,
 // Output:
 //   aperiodicity       : Decoded aperiodicity
 //-----------------------------------------------------------------------------
-void DecodeAperiodicity(const double * const *coded_aperiodicity,
-  int f0_length, int fs, int fft_size, double **aperiodicity);
+void DecodeAperiodicity(const double *const *coded_aperiodicity,
+                        int f0_length, int fs, int fft_size, double **aperiodicity);
 
 //-----------------------------------------------------------------------------
 // CodeSpectralEnvelope codes the spectral envelope.
@@ -66,9 +67,9 @@ void DecodeAperiodicity(const double * const *coded_aperiodicity,
 // Output:
 //   coded_spectral_envelope
 //-----------------------------------------------------------------------------
-void CodeSpectralEnvelope(const double * const *spectrogram, int f0_length,
-  int fs, int fft_size, int number_of_dimensions,
-  double **coded_spectral_envelope);
+void CodeSpectralEnvelope(const double *const *spectrogram, int f0_length,
+                          int fs, int fft_size, int number_of_dimensions,
+                          double **coded_spectral_envelope);
 
 //-----------------------------------------------------------------------------
 // DecodeSpectralEnvelope decodes the coded spectral envelope.
@@ -83,10 +84,10 @@ void CodeSpectralEnvelope(const double * const *spectrogram, int f0_length,
 // Output:
 //   spectrogram
 //-----------------------------------------------------------------------------
-void DecodeSpectralEnvelope(const double * const *coded_spectral_envelope,
-  int f0_length, int fs, int fft_size, int number_of_dimensions,
-  double **spectrogram);
+void DecodeSpectralEnvelope(const double *const *coded_spectral_envelope,
+                            int f0_length, int fs, int fft_size, int number_of_dimensions,
+                            double **spectrogram);
 
 WORLD_END_C_DECLS
 
-#endif  // WORLD_CODEC_H_
+#endif // WORLD_CODEC_H_

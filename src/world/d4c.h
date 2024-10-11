@@ -47,6 +47,10 @@ void D4C(const double *x, int x_length, int fs,
 //-----------------------------------------------------------------------------
 void InitializeD4COption(D4COption *option);
 
+void D4CB(const double *x, int x_length, int fs,
+          const double *temporal_positions, const double *f0, int f0_length,
+          int number_of_aperiodicities, const D4COption *option, double **aperiodicity);
+
 WORLD_END_C_DECLS
 
 #endif // WORLD_D4C_H_
