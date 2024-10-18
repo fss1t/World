@@ -340,11 +340,11 @@ namespace
     delete[] static_group_delay;
   }
 
-  static void InitializeAperiodicity(int f0_length, int fft_size,
+  static void InitializeAperiodicity(int f0_length, int number_of_aperiodicities,
                                      double **aperiodicity)
   {
     for (int i = 0; i < f0_length; ++i)
-      for (int j = 0; j < fft_size / 2 + 1; ++j)
+      for (int j = 0; j < number_of_aperiodicities; ++j)
         aperiodicity[i][j] = 1.0 - world::kMySafeGuardMinimum;
   }
 
@@ -394,7 +394,7 @@ void D4CB(const double *x, int x_length, int fs,
                    fft_size_d4c, temporal_positions[i], number_of_aperiodicities, window,
                    window_length, option->frequency_interval, &forward_real_fft, &coarse_aperiodicity[1]);
 
-    for (int j = 0; j <= number_of_aperiodicities; ++j)
+    for (int j = 0; j < number_of_aperiodicities; ++j)
       aperiodicity[i][j] = coarse_aperiodicity[j];
   }
 
