@@ -13,7 +13,8 @@ WORLD_BEGIN_C_DECLS
 //-----------------------------------------------------------------------------
 // Struct for Harvest
 //-----------------------------------------------------------------------------
-typedef struct {
+typedef struct
+{
   double f0_floor;
   double f0_ceil;
   double frame_period;
@@ -35,7 +36,10 @@ typedef struct {
 //   f0                   : F0 contour.
 //-----------------------------------------------------------------------------
 void Harvest(const double *x, int x_length, int fs,
-  const HarvestOption *option, double *temporal_positions, double *f0);
+             const HarvestOption *option, double *temporal_positions, double *f0);
+
+void HarvestHarmogram(const double *x, int x_length, int fs, int number_of_channels, const HarvestOption *option,
+                      double *temporal_positions, double *f0, double **harmogram);
 
 //-----------------------------------------------------------------------------
 // InitializeHarvestOption allocates the memory to the struct and sets the
@@ -62,4 +66,4 @@ int GetSamplesForHarvest(int fs, int x_length, double frame_period);
 
 WORLD_END_C_DECLS
 
-#endif  // WORLD_HARVEST_H_
+#endif // WORLD_HARVEST_H_
