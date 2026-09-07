@@ -8,6 +8,8 @@
 #include "world/harvest.h"
 
 #include <math.h>
+#include <cstdint>
+#include <bit>
 
 #include "world/common.h"
 #include "world/constantnumbers.h"
@@ -558,35 +560,52 @@ namespace
   }
 
   static void FixF0(const double* power_spectrum, const double* numerator_i,
-                    int fft_size, double fs, double current_f0, int number_of_harmonics,
-                    double* refined_f0, double* score)
+                    int fft_size, double fs, double current_f0,
+                    double* refined_f0)
   {
-    double* amplitude_list = new double[number_of_harmonics];
-    double* instantaneous_frequency_list = new double[number_of_harmonics];
+    int index = matlab_round(current_f0 * fft_size / fs);
 
-    int index;
-    for (int i = 0; i < number_of_harmonics; ++i)
+    double instantaneous_frequency = power_spectrum[index] == 0.0 ? 0.0 :
+      static_cast<double>(index) * fs / fft_size +
+      numerator_i[index] / power_spectrum[index] * fs / (2.0 * world::kPi);
+    double amplitude = sqrt(power_spectrum[index]);
+
+    *refined_f0 = amplitude * instantaneous_frequency / (amplitude + world::kMySafeGuardMinimum);
+  }
+
+  static void GetScore(const double* power_spectrum, int fft_size, double fs, double current_f0, int number_of_harmonics,
+                       double* score)
+  {
+    double s = 0.0;
+
+    const double index_f0 = current_f0 / fs * fft_size;
+    int index = static_cast<int>(index_f0 / 4.0) + 1;
+    int index_end = static_cast<int>(index_f0 / 2.0) + 1;
+    const double a = 4.0 / index_f0;
+    double b = 1.0;
+
+    for (; index < index_end; ++index)
+      s -= (a * static_cast<double>(index) - b) * log(power_spectrum[index]);
+
+    for (int i = 0; i < number_of_harmonics * 2 - 1; ++i)
     {
-      index = matlab_round(current_f0 * fft_size / fs * (i + 1));
-      instantaneous_frequency_list[i] = power_spectrum[index] == 0.0 ? 0.0 : static_cast<double>(index) * fs / fft_size + numerator_i[index] / power_spectrum[index] * fs / 2.0 / world::kPi;
-      amplitude_list[i] = sqrt(power_spectrum[index]);
-    }
-    double denominator = 0.0;
-    double numerator = 0.0;
-    *score = 0.0;
-    for (int i = 0; i < number_of_harmonics; ++i)
-    {
-      numerator += amplitude_list[i] * instantaneous_frequency_list[i];
-      denominator += amplitude_list[i] * (i + 1.0);
-      *score += fabs((instantaneous_frequency_list[i] / (i + 1.0) - current_f0) /
-                     current_f0);
+      index_end = static_cast<int>(index_f0 * static_cast<double>(i + 2) / 2.0) + 1;
+      b += 2.0;
+      const uint64_t sign = static_cast<uint64_t>(i & 1) << 63;
+
+      for (; index < index_end; ++index)
+        s += std::bit_cast<double>(
+          sign ^ std::bit_cast<uint64_t>((a * static_cast<double>(index) - b) * log(power_spectrum[index]))
+        );
     }
 
-    *refined_f0 = numerator / (denominator + world::kMySafeGuardMinimum);
-    *score = 1.0 / (*score / number_of_harmonics + world::kMySafeGuardMinimum);
+    index_end = static_cast<int>(index_f0 * static_cast<double>(4 * number_of_harmonics + 1) / 4.0) + 1;
+    b += 2.0;
 
-    delete[] amplitude_list;
-    delete[] instantaneous_frequency_list;
+    for (; index < index_end; ++index)
+      s -= (a * static_cast<double>(index) - b) * log(power_spectrum[index]);
+
+    *score = s;
   }
 
   //-----------------------------------------------------------------------------
@@ -624,10 +643,11 @@ namespace
         main_spectrum[j][1] * main_spectrum[j][1];
     }
 
+    FixF0(power_spectrum, numerator_i, fft_size, fs, current_f0, refined_f0);
+
     int number_of_harmonics =
-      MyMinInt(static_cast<int>(fs / 2.0 / current_f0), 6);
-    FixF0(power_spectrum, numerator_i, fft_size, fs, current_f0,
-          number_of_harmonics, refined_f0, refined_score);
+      MyMinInt(static_cast<int>(fs / 2.0 / current_f0) - 1, 6);
+    GetScore(power_spectrum, fft_size, fs, *refined_f0, number_of_harmonics, refined_score);
 
     delete[] diff_spectrum;
     delete[] diff_window;
@@ -665,8 +685,7 @@ namespace
               window_length_in_time, base_time, half_window_length * 2 + 1,
               refined_f0, refined_score);
 
-    if (*refined_f0 < f0_floor || *refined_f0 > f0_ceil ||
-        *refined_score < 2.5)
+    if (*refined_f0 < f0_floor || *refined_f0 > f0_ceil)
     {
       *refined_f0 = 0.0;
       *refined_score = 0.0;
@@ -1328,8 +1347,7 @@ namespace
       overlap_parameter;
 
     RefineF0Candidates(y, y_length, actual_fs, temporal_positions, f0_length,
-                       number_of_candidates, f0_floor, f0_ceil, f0_candidates,
-                       f0_candidates_score);
+                       number_of_candidates, f0_floor, f0_ceil, f0_candidates, f0_candidates_score);
     RemoveUnreliableCandidates(f0_length, number_of_candidates,
                                f0_candidates, f0_candidates_score);
 
