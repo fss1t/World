@@ -585,7 +585,7 @@ namespace
     double b = 1.0;
 
     for (; index < index_end; ++index)
-      s -= (a * static_cast<double>(index) - b) * log(power_spectrum[index]);
+      s -= (a * static_cast<double>(index) - b) * log(MyMaxDouble(power_spectrum[index], world::kMySafeGuardMinimum));
 
     for (int i = 0; i < number_of_harmonics * 2 - 1; ++i)
     {
@@ -595,7 +595,7 @@ namespace
 
       for (; index < index_end; ++index)
         s += std::bit_cast<double>(
-          sign ^ std::bit_cast<uint64_t>((a * static_cast<double>(index) - b) * log(power_spectrum[index]))
+          sign ^ std::bit_cast<uint64_t>((a * static_cast<double>(index) - b) * log(MyMaxDouble(power_spectrum[index], world::kMySafeGuardMinimum)))
         );
     }
 
@@ -603,7 +603,7 @@ namespace
     b += 2.0;
 
     for (; index < index_end; ++index)
-      s -= (a * static_cast<double>(index) - b) * log(power_spectrum[index]);
+      s -= (a * static_cast<double>(index) - b) * log(MyMaxDouble(power_spectrum[index], world::kMySafeGuardMinimum));
 
     *score = s;
   }
