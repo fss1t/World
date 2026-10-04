@@ -646,7 +646,7 @@ namespace
     FixF0(power_spectrum, numerator_i, fft_size, fs, current_f0, refined_f0);
 
     int number_of_harmonics =
-      MyMinInt(static_cast<int>(fs / 2.0 / current_f0) - 2, 6);
+      MyMinInt(static_cast<int>(fs / 2.0 / current_f0) - 1, 6);
     GetScore(power_spectrum, fft_size, fs, *refined_f0, number_of_harmonics, refined_score);
 
     delete[] diff_spectrum;
