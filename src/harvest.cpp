@@ -580,7 +580,7 @@ namespace
 
     const double index_f0 = current_f0 / fs * fft_size;
     int index = static_cast<int>(index_f0 / 4.0) + 1;
-    int index_end = static_cast<int>(index_f0 / 2.0) + 1;
+    int index_end = MyMinInt(static_cast<int>(index_f0 / 2.0) + 1, fft_size / 2 + 1);
     const double a = 4.0 / index_f0;
     double b = 1.0;
 
@@ -589,17 +589,17 @@ namespace
 
     for (int i = 0; i < number_of_harmonics * 2 - 1; ++i)
     {
-      index_end = static_cast<int>(index_f0 * static_cast<double>(i + 2) / 2.0) + 1;
+      index_end = MyMinInt(static_cast<int>(index_f0 * static_cast<double>(i + 2) / 2.0) + 1, fft_size / 2 + 1);
       b += 2.0;
       const uint64_t sign = static_cast<uint64_t>(i & 1) << 63;
 
       for (; index < index_end; ++index)
-        s += std::bit_cast<double>(
-          sign ^ std::bit_cast<uint64_t>((a * static_cast<double>(index) - b) * log(MyMaxDouble(power_spectrum[index], world::kMySafeGuardMinimum)))
-        );
+        s += std::bit_cast<double>(sign ^ std::bit_cast<uint64_t>(
+          (a * static_cast<double>(index) - b) * log(MyMaxDouble(power_spectrum[index], world::kMySafeGuardMinimum))
+        ));
     }
 
-    index_end = static_cast<int>(index_f0 * static_cast<double>(4 * number_of_harmonics + 1) / 4.0) + 1;
+    index_end = MyMinInt(static_cast<int>(index_f0 * static_cast<double>(4 * number_of_harmonics + 1) / 4.0) + 1, fft_size / 2 + 1);
     b += 2.0;
 
     for (; index < index_end; ++index)
